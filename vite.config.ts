@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}"],
         navigateFallback: "/index.html",          // Serve app shell for any route
-        navigateFallbackDenylist: [/^\\/~oauth/],
+        navigateFallbackDenylist: [/^\/~oauth/],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
