@@ -3,7 +3,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Habit, HabitCategory, HabitColor, CATEGORY_LABELS, HABIT_ICONS } from '@/types/habit';
+import { ListTodo } from 'lucide-react';
 
 const colors: HabitColor[] = ['blue', 'green', 'orange', 'pink', 'purple'];
 const categories: HabitCategory[] = ['health', 'fitness', 'mindfulness', 'productivity', 'learning', 'social'];
@@ -29,6 +31,7 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
   const [color, setColor] = useState<HabitColor>('blue');
   const [category, setCategory] = useState<HabitCategory>('health');
   const [targetDays, setTargetDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [hasSubtasks, setHasSubtasks] = useState(false);
 
   // Pre-populate form whenever the habit changes
   useEffect(() => {
@@ -37,6 +40,7 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
       setColor(habit.color);
       setCategory(habit.category);
       setTargetDays(habit.targetDays);
+      setHasSubtasks(habit.hasSubtasks || false);
     }
   }, [habit]);
 
@@ -48,6 +52,9 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
       color,
       category,
       targetDays,
+      hasSubtasks,
+      // If turning ON subtasks and they don't exist, initialize them
+      ...(hasSubtasks && !habit.subtasks ? { subtasks: [] } : {}),
     });
     onClose();
   };
@@ -132,6 +139,35 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
               ))}
             </div>
           </div>
+          
+          {/* Subtasks Toggle */}
+          <div className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+            hasSubtasks ? 'border-primary/40 bg-primary/5' : 'border-border bg-muted/30'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                hasSubtasks ? 'bg-primary/15' : 'bg-muted'
+              }`}>
+                <ListTodo className={`w-5 h-5 ${hasSubtasks ? 'text-primary' : 'text-muted-foreground'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">Has Sub-tasks</p>
+                <p className="text-xs text-muted-foreground">Break this habit into steps</p>
+              </div>
+            </div>
+            <Switch
+              checked={hasSubtasks}
+              onCheckedChange={setHasSubtasks}
+            />
+          </div>
+
+          {hasSubtasks && (
+            <div className="rounded-2xl bg-primary/5 border border-primary/20 px-4 py-3">
+              <p className="text-xs text-primary font-semibold">
+                💡 Tap the habit card on the home screen to manage your sub-tasks.
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={onClose} className="flex-1 h-14 rounded-xl text-base font-bold">
