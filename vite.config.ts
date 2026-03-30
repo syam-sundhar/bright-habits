@@ -19,11 +19,16 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       devOptions: {
-        enabled: false,
+        enabled: true, // Enable SW in dev so offline can be tested
+        type: "module",
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        navigateFallbackDenylist: [/^\/~oauth/],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}"],
+        navigateFallback: "/index.html",          // Serve app shell for any route
+        navigateFallbackDenylist: [/^\\/~oauth/],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -40,6 +45,18 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: "gstatic-fonts-cache",
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Cache all same-origin requests (app assets)
+            urlPattern: ({ request }) =>
+              request.mode === "navigate" || request.destination === "script"
+              || request.destination === "style" || request.destination === "image",
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "app-shell-cache",
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
