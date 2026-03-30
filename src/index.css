@@ -75,4 +75,11 @@
   .bottom-nav-shadow {
     box-shadow: 0 -4px 20px -4px hsl(var(--foreground) / 0.08);
   }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

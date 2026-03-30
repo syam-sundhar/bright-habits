@@ -1,18 +1,37 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useHabits } from '@/hooks/useHabits';
+import { useNavigate } from 'react-router-dom';
+import { useHabitsContext } from '@/context/HabitsContext';
 import { HabitCard } from '@/components/habit/HabitCard';
 import { ProgressRing } from '@/components/habit/ProgressRing';
 import { BottomNav } from '@/components/habit/BottomNav';
 import { AddHabitSheet } from '@/components/habit/AddHabitSheet';
+import { EditHabitSheet } from '@/components/habit/EditHabitSheet';
 import { StatsView } from '@/components/habit/StatsView';
 import { ManageView } from '@/components/habit/ManageView';
+import { Habit } from '@/types/habit';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<'home' | 'stats' | 'settings'>('home');
   const [addOpen, setAddOpen] = useState(false);
-  const { habits, today, toggleHabit, addHabit, deleteHabit, getStreak, getTodayProgress, getWeekData } = useHabits();
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+
+  const {
+    habits,
+    today,
+    toggleHabit,
+    addHabit,
+    deleteHabit,
+    editHabit,
+    getStreak,
+    getTodayProgress,
+    getWeekData,
+    getMonthlyStats,
+    getHabitProgress,
+    getHabit30DayGrid,
+  } = useHabitsContext();
 
   const progress = getTodayProgress();
   const todayDay = new Date().getDay();
@@ -69,6 +88,8 @@ const Index = () => {
                     streak={getStreak(habit)}
                     onToggle={() => toggleHabit(habit.id)}
                     onDelete={() => deleteHabit(habit.id)}
+                    onEdit={() => setEditingHabit(habit)}
+                    onOpenDetail={() => navigate(`/habit/${habit.id}`)}
                   />
                 ))}
               </div>
@@ -84,7 +105,15 @@ const Index = () => {
               transition={{ duration: 0.2 }}
             >
               <h1 className="text-2xl font-extrabold text-foreground mb-6">Statistics</h1>
-              <StatsView habits={habits} today={today} getStreak={getStreak} getWeekData={getWeekData} />
+              <StatsView
+                habits={habits}
+                today={today}
+                getStreak={getStreak}
+                getWeekData={getWeekData}
+                getMonthlyStats={getMonthlyStats}
+                getHabitProgress={getHabitProgress}
+                getHabit30DayGrid={getHabit30DayGrid}
+              />
             </motion.div>
           )}
 
@@ -105,6 +134,12 @@ const Index = () => {
 
       <BottomNav active={tab} onNavigate={setTab} onAdd={() => setAddOpen(true)} />
       <AddHabitSheet open={addOpen} onClose={() => setAddOpen(false)} onAdd={addHabit} />
+      <EditHabitSheet
+        habit={editingHabit}
+        open={editingHabit !== null}
+        onClose={() => setEditingHabit(null)}
+        onSave={editHabit}
+      />
     </div>
   );
 };

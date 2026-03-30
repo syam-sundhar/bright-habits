@@ -2,6 +2,12 @@ export type HabitColor = 'blue' | 'green' | 'orange' | 'pink' | 'purple';
 
 export type HabitCategory = 'health' | 'fitness' | 'mindfulness' | 'productivity' | 'learning' | 'social';
 
+export interface Subtask {
+  id: string;
+  name: string;
+  completedDates: string[]; // ISO date strings per day
+}
+
 export interface Habit {
   id: string;
   name: string;
@@ -12,6 +18,8 @@ export interface Habit {
   targetDays: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
   createdAt: string;
   completedDates: string[]; // ISO date strings "YYYY-MM-DD"
+  hasSubtasks?: boolean;
+  subtasks?: Subtask[];
 }
 
 export const CATEGORY_LABELS: Record<HabitCategory, string> = {

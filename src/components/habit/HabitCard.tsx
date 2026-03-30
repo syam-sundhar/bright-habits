@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
-import { Check, Flame, MoreVertical, Trash2 } from 'lucide-react';
+import { Check, Flame, MoreVertical, Trash2, Pencil, ChevronRight, ListTodo } from 'lucide-react';
 import { Habit } from '@/types/habit';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface HabitCardProps {
   habit: Habit;
@@ -9,6 +9,8 @@ interface HabitCardProps {
   streak: number;
   onToggle: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
+  onOpenDetail?: () => void;
 }
 
 const colorClasses: Record<string, { bg: string; check: string; ring: string }> = {
@@ -19,61 +21,122 @@ const colorClasses: Record<string, { bg: string; check: string; ring: string }> 
   purple: { bg: 'bg-habit-purple/10', check: 'bg-habit-purple', ring: 'ring-habit-purple/30' },
 };
 
-export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete }: HabitCardProps) {
+export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEdit, onOpenDetail }: HabitCardProps) {
   const colors = colorClasses[habit.color] || colorClasses.blue;
+  const hasSubtasks = habit.hasSubtasks && (habit.subtasks?.length ?? 0) > 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const subtasksDone = habit.subtasks?.filter(s => s.completedDates.includes(today)).length ?? 0;
+  const subtasksTotal = habit.subtasks?.length ?? 0;
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex items-center gap-4 p-4 rounded-xl bg-card habit-card-shadow transition-all ${isCompleted ? 'opacity-75' : ''}`}
+      className={`rounded-xl bg-card habit-card-shadow transition-all ${isCompleted ? 'opacity-75' : ''}`}
     >
-      <motion.button
-        whileTap={{ scale: 0.85 }}
-        onClick={onToggle}
-        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all ring-2 ${
-          isCompleted
-            ? `${colors.check} text-primary-foreground ring-transparent`
-            : `${colors.bg} ${colors.ring}`
-        }`}
-      >
-        {isCompleted ? (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="animate-check-bounce">
-            <Check className="w-6 h-6" />
-          </motion.div>
-        ) : (
-          <span className="text-xl">{habit.icon}</span>
-        )}
-      </motion.button>
+      <div className="flex items-center gap-4 p-4">
+        {/* Check button */}
+        <motion.button
+          whileTap={{ scale: 0.85 }}
+          onClick={onToggle}
+          className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all ring-2 ${
+            isCompleted
+              ? `${colors.check} text-primary-foreground ring-transparent`
+              : `${colors.bg} ${colors.ring}`
+          }`}
+        >
+          {isCompleted ? (
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="animate-check-bounce">
+              <Check className="w-6 h-6" />
+            </motion.div>
+          ) : (
+            <span className="text-xl">{habit.icon}</span>
+          )}
+        </motion.button>
 
-      <div className="flex-1 min-w-0">
-        <p className={`font-semibold text-[15px] ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-          {habit.name}
-        </p>
-        <p className="text-xs text-muted-foreground capitalize">{habit.category}</p>
+        {/* Name + category */}
+        <div className="flex-1 min-w-0" onClick={habit.hasSubtasks ? onOpenDetail : undefined}>
+          <p className={`font-semibold text-[15px] ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+            {habit.name}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-muted-foreground capitalize">{habit.category}</p>
+            {habit.hasSubtasks && (
+              <span className="flex items-center gap-0.5 text-[10px] font-bold text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-full">
+                <ListTodo className="w-2.5 h-2.5" />
+                {subtasksDone}/{subtasksTotal}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Streak badge */}
+        {streak > 0 && (
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/50">
+            <Flame className="w-3.5 h-3.5 text-secondary-foreground" />
+            <span className="text-xs font-bold text-secondary-foreground">{streak}</span>
+          </div>
+        )}
+
+        {/* Subtask arrow — tappable to open detail */}
+        {habit.hasSubtasks && (
+          <button
+            onClick={onOpenDetail}
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Three dots menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+              <MoreVertical className="w-5 h-5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[150px]">
+            {habit.hasSubtasks && (
+              <>
+                <DropdownMenuItem onClick={onOpenDetail} className="font-medium">
+                  <ListTodo className="w-4 h-4 mr-2 text-primary" />
+                  View Steps
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <DropdownMenuItem onClick={onEdit} className="font-medium">
+              <Pencil className="w-4 h-4 mr-2 text-primary" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {streak > 0 && (
-        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/50">
-          <Flame className="w-3.5 h-3.5 text-secondary-foreground" />
-          <span className="text-xs font-bold text-secondary-foreground">{streak}</span>
+      {/* Subtask progress bar (when has steps) */}
+      {habit.hasSubtasks && subtasksTotal > 0 && (
+        <div className="px-4 pb-3">
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className={`h-full rounded-full ${colors.check}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${(subtasksDone / subtasksTotal) * 100}%` }}
+              transition={{ duration: 0.4 }}
+            />
+          </div>
+          <p className="text-[9px] text-muted-foreground mt-1 font-semibold">
+            {subtasksDone === subtasksTotal && subtasksTotal > 0
+              ? '✅ All steps completed!'
+              : `${subtasksDone} of ${subtasksTotal} steps done`}
+          </p>
         </div>
       )}
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
-            <MoreVertical className="w-5 h-5" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[140px]">
-          <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-            <Trash2 className="w-4 h-4 mr-2" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </motion.div>
   );
 }

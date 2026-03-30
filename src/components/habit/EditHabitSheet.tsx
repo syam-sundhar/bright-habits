@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Habit, HabitCategory, HabitColor, CATEGORY_LABELS, HABIT_ICONS } from '@/types/habit';
-import { ListTodo } from 'lucide-react';
 
 const colors: HabitColor[] = ['blue', 'green', 'orange', 'pink', 'purple'];
 const categories: HabitCategory[] = ['health', 'fitness', 'mindfulness', 'productivity', 'learning', 'social'];
@@ -19,37 +17,38 @@ const colorHslClasses: Record<HabitColor, string> = {
   purple: 'bg-habit-purple',
 };
 
-interface AddHabitSheetProps {
+interface EditHabitSheetProps {
+  habit: Habit | null;
   open: boolean;
   onClose: () => void;
-  onAdd: (habit: Omit<Habit, 'id' | 'createdAt' | 'completedDates'>) => void;
+  onSave: (id: string, updates: Partial<Habit>) => void;
 }
 
-export function AddHabitSheet({ open, onClose, onAdd }: AddHabitSheetProps) {
+export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetProps) {
   const [name, setName] = useState('');
   const [color, setColor] = useState<HabitColor>('blue');
   const [category, setCategory] = useState<HabitCategory>('health');
   const [targetDays, setTargetDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
-  const [hasSubtasks, setHasSubtasks] = useState(false);
 
-  const handleSubmit = () => {
-    if (!name.trim()) return;
-    onAdd({
+  // Pre-populate form whenever the habit changes
+  useEffect(() => {
+    if (habit) {
+      setName(habit.name);
+      setColor(habit.color);
+      setCategory(habit.category);
+      setTargetDays(habit.targetDays);
+    }
+  }, [habit]);
+
+  const handleSave = () => {
+    if (!habit || !name.trim()) return;
+    onSave(habit.id, {
       name: name.trim(),
       icon: HABIT_ICONS[category],
       color,
       category,
-      frequency: 'daily',
       targetDays,
-      hasSubtasks,
-      subtasks: hasSubtasks ? [] : undefined,
     });
-    // Reset
-    setName('');
-    setColor('blue');
-    setCategory('health');
-    setTargetDays([0, 1, 2, 3, 4, 5, 6]);
-    setHasSubtasks(false);
     onClose();
   };
 
@@ -61,9 +60,9 @@ export function AddHabitSheet({ open, onClose, onAdd }: AddHabitSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={v => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto pb-10">
+      <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto pb-10">
         <SheetHeader>
-          <SheetTitle className="text-xl font-bold">New Habit</SheetTitle>
+          <SheetTitle className="text-xl font-bold">Edit Habit</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
@@ -134,38 +133,14 @@ export function AddHabitSheet({ open, onClose, onAdd }: AddHabitSheetProps) {
             </div>
           </div>
 
-          {/* Subtasks Toggle */}
-          <div className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-            hasSubtasks ? 'border-primary/40 bg-primary/5' : 'border-border bg-muted/30'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                hasSubtasks ? 'bg-primary/15' : 'bg-muted'
-              }`}>
-                <ListTodo className={`w-5 h-5 ${hasSubtasks ? 'text-primary' : 'text-muted-foreground'}`} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">Has Sub-tasks</p>
-                <p className="text-xs text-muted-foreground">Break this habit into steps</p>
-              </div>
-            </div>
-            <Switch
-              checked={hasSubtasks}
-              onCheckedChange={setHasSubtasks}
-            />
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose} className="flex-1 h-14 rounded-xl text-base font-bold">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} className="flex-1 h-14 rounded-xl text-base font-bold">
+              Save Changes
+            </Button>
           </div>
-
-          {hasSubtasks && (
-            <div className="rounded-2xl bg-primary/5 border border-primary/20 px-4 py-3">
-              <p className="text-xs text-primary font-semibold">
-                💡 After creating, tap the habit card to open and add your sub-tasks.
-              </p>
-            </div>
-          )}
-
-          <Button onClick={handleSubmit} className="w-full h-14 rounded-xl text-base font-bold">
-            Create Habit
-          </Button>
         </div>
       </SheetContent>
     </Sheet>
