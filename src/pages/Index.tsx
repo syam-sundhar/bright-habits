@@ -68,6 +68,7 @@ const Index = () => {
                     isCompleted={habit.completedDates.includes(today)}
                     streak={getStreak(habit)}
                     onToggle={() => toggleHabit(habit.id)}
+                    onDelete={() => deleteHabit(habit.id)}
                   />
                 ))}
               </div>
