@@ -11,6 +11,7 @@ interface DayCell {
   isScheduled: boolean;
   isCompleted: boolean;
   isFuture: boolean;
+  isFrozen: boolean;
 }
 
 interface StatsViewProps {
@@ -26,13 +27,15 @@ interface StatsViewProps {
   };
   getHabitProgress: (id: string, type: 'calendar' | 'rolling') => number;
   getHabit30DayGrid: (id: string) => DayCell[];
+  onToggleDay: (habitId: string, date: string) => void;
 }
 
 // Horizontal 30-day grid for one habit — scrollable
-function HabitDayGrid({ habit, grid }: { habit: Habit; grid: DayCell[] }) {
+function HabitDayGrid({ habit, grid, onToggleDay }: { habit: Habit; grid: DayCell[]; onToggleDay: (habitId: string, date: string) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLDivElement>(null);
   const completedCount = grid.filter(d => d.isCompleted).length;
+  const frozenCount    = grid.filter(d => d.isFrozen && !d.isCompleted).length;
   const scheduledCount = grid.filter(d => d.isScheduled).length;
   const rate = scheduledCount > 0 ? Math.round((completedCount / scheduledCount) * 100) : 0;
 
@@ -64,6 +67,11 @@ function HabitDayGrid({ habit, grid }: { habit: Habit; grid: DayCell[] }) {
             <Flame className={`w-3.5 h-3.5 ${completedCount > 0 ? 'text-orange-400' : 'text-muted-foreground/25'}`} />
           </div>
           <span className="text-xs font-black text-foreground tabular-nums">{completedCount}/{scheduledCount}</span>
+          {frozenCount > 0 && (
+            <span className="text-xs font-black tabular-nums px-2 py-0.5 rounded-full bg-blue-50 text-blue-500">
+              ❄️ {frozenCount}
+            </span>
+          )}
           <span className={`text-xs font-black tabular-nums px-2 py-0.5 rounded-full ${
             rate >= 80 ? 'bg-green-100 text-green-600' :
             rate >= 50 ? 'bg-amber-100 text-amber-600' :
@@ -88,29 +96,40 @@ function HabitDayGrid({ habit, grid }: { habit: Habit; grid: DayCell[] }) {
                 className="flex flex-col items-center gap-1"
               >
                 {/* Day box */}
-                <motion.div
+                <motion.button
+                  onClick={() => {
+                    // Only allow toggling if it was scheduled or completed/frozen (could be past or today)
+                    if (!cell.isFuture) {
+                      onToggleDay(habit.id, cell.date);
+                    }
+                  }}
+                  whileTap={!cell.isFuture ? { scale: 0.85 } : undefined}
                   initial={{ opacity: 0, scale: 0.7 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.012, duration: 0.25 }}
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center relative
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center relative transition-all
                     ${isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-                    ${cell.isFuture ? 'opacity-30' : ''}
+                    ${cell.isFuture ? 'opacity-30 cursor-default' : 'cursor-pointer hover:ring-2 hover:ring-primary/50'}
                     ${cell.isCompleted
                       ? 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-sm shadow-green-200'
-                      : cell.isScheduled
-                        ? 'bg-red-100'
-                        : 'bg-muted/40'
+                      : cell.isFrozen
+                        ? 'bg-gradient-to-br from-blue-400 to-sky-500 shadow-sm shadow-blue-200'
+                        : cell.isScheduled
+                          ? 'bg-red-100'
+                          : 'bg-muted/40'
                     }
                   `}
                 >
                   {cell.isCompleted ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                  ) : cell.isFrozen ? (
+                    <span className="text-[10px]">❄️</span>
                   ) : cell.isScheduled ? (
                     <MinusCircle className="w-3 h-3 text-red-400" />
                   ) : (
                     <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/20" />
                   )}
-                </motion.div>
+                </motion.button>
                 {/* Day number */}
                 <span className={`text-[9px] font-bold tabular-nums ${
                   isToday ? 'text-primary' : 'text-muted-foreground/60'
@@ -130,6 +149,10 @@ function HabitDayGrid({ habit, grid }: { habit: Habit; grid: DayCell[] }) {
           <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Done</span>
         </div>
         <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-gradient-to-br from-blue-400 to-sky-500" />
+          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Frozen</span>
+        </div>
+        <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded bg-red-100" />
           <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Missed</span>
         </div>
@@ -142,7 +165,7 @@ function HabitDayGrid({ habit, grid }: { habit: Habit; grid: DayCell[] }) {
   );
 }
 
-export function StatsView({ habits, today, getStreak, getWeekData, getMonthlyStats, getHabitProgress, getHabit30DayGrid }: StatsViewProps) {
+export function StatsView({ habits, today, getStreak, getWeekData, getMonthlyStats, getHabitProgress, getHabit30DayGrid, onToggleDay }: StatsViewProps) {
   const weekData = getWeekData();
   const calendarStats = getMonthlyStats('calendar');
   const bestStreak = Math.max(...habits.map(h => getStreak(h)), 0);
@@ -229,6 +252,7 @@ export function StatsView({ habits, today, getStreak, getWeekData, getMonthlySta
               <HabitDayGrid
                 habit={habit}
                 grid={getHabit30DayGrid(habit.id)}
+                onToggleDay={onToggleDay}
               />
             </motion.div>
           ))}

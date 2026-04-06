@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Circle, ChevronRight } from 'lucide-react';
@@ -26,6 +26,15 @@ export function HabitDetailPage({
   const navigate = useNavigate();
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
+  const [notes, setNotes] = useState(() => {
+    return localStorage.getItem(`habit-notes-${id}`) || '';
+  });
+
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem(`habit-notes-${id}`, notes);
+    }
+  }, [notes, id]);
 
   const habit = habits.find(h => h.id === id);
   if (!habit) {
@@ -231,6 +240,27 @@ export function HabitDetailPage({
               </AnimatePresence>
             </div>
           )}
+        </div>
+
+        {/* Notes (Notepad) section */}
+        <div className="mt-8">
+          <div className="flex items-center mb-3">
+            <h2 className="text-sm font-black text-foreground uppercase tracking-widest">
+              Notes
+            </h2>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col p-4 rounded-2xl bg-card border border-border/50 shadow-sm"
+          >
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Jot down anything you want to remember..."
+              className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none resize-none min-h-[120px]"
+            />
+          </motion.div>
         </div>
 
         {/* Footer date */}

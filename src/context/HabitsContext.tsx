@@ -23,7 +23,7 @@ interface HabitsContextType {
   getHabitProgress: (id: string, type: 'calendar' | 'rolling') => number;
   getHabit30DayGrid: (id: string) => {
     date: string; dayLabel: string; dayShort: string;
-    isScheduled: boolean; isCompleted: boolean; isFuture: boolean;
+    isScheduled: boolean; isCompleted: boolean; isFuture: boolean; isFrozen: boolean;
   }[];
 }
 

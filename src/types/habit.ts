@@ -20,6 +20,10 @@ export interface Habit {
   completedDates: string[]; // ISO date strings "YYYY-MM-DD"
   hasSubtasks?: boolean;
   subtasks?: Subtask[];
+  freezes?: number;      // available freeze tokens (0–2)
+  freezeEarned?: number; // highest milestone earned (0 = none, 1 = 7-day, 2 = 30-day)
+  frozenDates?: string[]; // dates protected by a freeze (shown in blue)
+  reminderTime?: string; // Daily reminder time for push notification (e.g., "09:00")
 }
 
 export const CATEGORY_LABELS: Record<HabitCategory, string> = {

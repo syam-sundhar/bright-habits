@@ -32,6 +32,8 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
   const [category, setCategory] = useState<HabitCategory>('health');
   const [targetDays, setTargetDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
   const [hasSubtasks, setHasSubtasks] = useState(false);
+  const [reminderTime, setReminderTime] = useState('');
+
 
   // Pre-populate form whenever the habit changes
   useEffect(() => {
@@ -41,6 +43,7 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
       setCategory(habit.category);
       setTargetDays(habit.targetDays);
       setHasSubtasks(habit.hasSubtasks || false);
+      setReminderTime(habit.reminderTime || '');
     }
   }, [habit]);
 
@@ -53,8 +56,10 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
       category,
       targetDays,
       hasSubtasks,
+      reminderTime: reminderTime ? reminderTime : undefined,
       // If turning ON subtasks and they don't exist, initialize them
       ...(hasSubtasks && !habit.subtasks ? { subtasks: [] } : {}),
+      // If turning OFF subtasks, we might want to preserve them just in case, but usually undefined is fine in DB
     });
     onClose();
   };
@@ -138,6 +143,17 @@ export function EditHabitSheet({ habit, open, onClose, onSave }: EditHabitSheetP
                 </button>
               ))}
             </div>
+          </div>
+          
+          {/* Reminder Time */}
+          <div>
+            <Label className="text-sm font-semibold text-muted-foreground">Daily Reminder (Optional)</Label>
+            <Input
+              type="time"
+              value={reminderTime}
+              onChange={e => setReminderTime(e.target.value)}
+              className="mt-2 h-12 rounded-xl text-base"
+            />
           </div>
           
           {/* Subtasks Toggle */}

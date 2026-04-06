@@ -31,6 +31,7 @@ export function AddHabitSheet({ open, onClose, onAdd }: AddHabitSheetProps) {
   const [category, setCategory] = useState<HabitCategory>('health');
   const [targetDays, setTargetDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
   const [hasSubtasks, setHasSubtasks] = useState(false);
+  const [reminderTime, setReminderTime] = useState('');
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -42,6 +43,7 @@ export function AddHabitSheet({ open, onClose, onAdd }: AddHabitSheetProps) {
       frequency: 'daily',
       targetDays,
       hasSubtasks,
+      reminderTime: reminderTime || undefined,
       subtasks: hasSubtasks ? [] : undefined,
     });
     // Reset
@@ -50,6 +52,7 @@ export function AddHabitSheet({ open, onClose, onAdd }: AddHabitSheetProps) {
     setCategory('health');
     setTargetDays([0, 1, 2, 3, 4, 5, 6]);
     setHasSubtasks(false);
+    setReminderTime('');
     onClose();
   };
 
@@ -132,6 +135,17 @@ export function AddHabitSheet({ open, onClose, onAdd }: AddHabitSheetProps) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Reminder Time */}
+          <div>
+            <Label className="text-sm font-semibold text-muted-foreground">Daily Reminder (Optional)</Label>
+            <Input
+              type="time"
+              value={reminderTime}
+              onChange={e => setReminderTime(e.target.value)}
+              className="mt-2 h-12 rounded-xl text-base"
+            />
           </div>
 
           {/* Subtasks Toggle */}

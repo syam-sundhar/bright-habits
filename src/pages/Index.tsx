@@ -10,13 +10,17 @@ import { AddHabitSheet } from '@/components/habit/AddHabitSheet';
 import { EditHabitSheet } from '@/components/habit/EditHabitSheet';
 import { StatsView } from '@/components/habit/StatsView';
 import { ManageView } from '@/components/habit/ManageView';
+import { BadgesView } from '@/components/habit/BadgesView';
 import { Habit } from '@/types/habit';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const Index = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'home' | 'stats' | 'settings'>('home');
+  const [tab, setTab] = useState<'home' | 'stats' | 'settings' | 'badges'>('home');
   const [addOpen, setAddOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+
+  useNotifications();
 
   const {
     habits,
@@ -113,6 +117,7 @@ const Index = () => {
                 getMonthlyStats={getMonthlyStats}
                 getHabitProgress={getHabitProgress}
                 getHabit30DayGrid={getHabit30DayGrid}
+                onToggleDay={toggleHabit}
               />
             </motion.div>
           )}
@@ -127,6 +132,19 @@ const Index = () => {
             >
               <h1 className="text-2xl font-extrabold text-foreground mb-6">Manage Habits</h1>
               <ManageView habits={habits} onDelete={deleteHabit} />
+            </motion.div>
+          )}
+
+          {tab === 'badges' && (
+            <motion.div
+              key="badges"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <h1 className="text-2xl font-extrabold text-foreground mb-6">🏅 Badges</h1>
+              <BadgesView habits={habits} getStreak={getStreak} />
             </motion.div>
           )}
         </AnimatePresence>

@@ -27,13 +27,16 @@ export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEd
   const today = new Date().toISOString().slice(0, 10);
   const subtasksDone = habit.subtasks?.filter(s => s.completedDates.includes(today)).length ?? 0;
   const subtasksTotal = habit.subtasks?.length ?? 0;
+  const freezesLeft = habit.freezes ?? 0;
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-xl bg-card habit-card-shadow transition-all ${isCompleted ? 'opacity-75' : ''}`}
+      className={`rounded-xl bg-card habit-card-shadow transition-all duration-300 ${
+        isCompleted ? 'grayscale opacity-60' : ''
+      }`}
     >
       <div className="flex items-center gap-4 p-4">
         {/* Check button */}
@@ -42,7 +45,7 @@ export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEd
           onClick={onToggle}
           className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all ring-2 ${
             isCompleted
-              ? `${colors.check} text-primary-foreground ring-transparent`
+              ? 'bg-foreground/15 text-foreground ring-transparent'
               : `${colors.bg} ${colors.ring}`
           }`}
         >
@@ -76,6 +79,15 @@ export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEd
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/50">
             <Flame className="w-3.5 h-3.5 text-secondary-foreground" />
             <span className="text-xs font-bold text-secondary-foreground">{streak}</span>
+          </div>
+        )}
+
+        {/* Freeze tokens */}
+        {freezesLeft > 0 && (
+          <div className="flex items-center gap-0.5 px-2 py-1 rounded-full bg-blue-50">
+            {Array.from({ length: freezesLeft }).map((_, i) => (
+              <span key={i} className="text-xs">❄️</span>
+            ))}
           </div>
         )}
 

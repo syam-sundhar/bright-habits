@@ -63,7 +63,43 @@ export function useHabits() {
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
+  // ─── Auto-apply freeze for most-recently-missed scheduled day ─────────────
+  // Runs once per day on mount. Only freezes a day if the streak was intact
+  // the day before (i.e., only fills a single-day gap adjacent to the streak).
+  useEffect(() => {
+    const FREEZE_CHECK_KEY = 'habit-freeze-check-date';
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    if (localStorage.getItem(FREEZE_CHECK_KEY) === todayStr) return;
+    localStorage.setItem(FREEZE_CHECK_KEY, todayStr);
 
+    const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+    const dayBeforeYesterday = format(subDays(new Date(), 2), 'yyyy-MM-dd');
+
+    setHabits(prev => prev.map(h => {
+      if ((h.freezes ?? 0) <= 0) return h;
+
+      const frozenDates = h.frozenDates ?? [];
+      const yesterdayDay = parseISO(yesterday).getDay();
+
+      // Yesterday must be a scheduled day
+      if (!h.targetDays.includes(yesterdayDay)) return h;
+      // Yesterday must not already be done or frozen
+      if (h.completedDates.includes(yesterday) || frozenDates.includes(yesterday)) return h;
+
+      // The day before yesterday must have been completed or frozen (streak existed)
+      const hadStreak =
+        h.completedDates.includes(dayBeforeYesterday) ||
+        frozenDates.includes(dayBeforeYesterday);
+      if (!hadStreak) return h;
+
+      // Apply freeze: mark yesterday as frozen, consume one token
+      return {
+        ...h,
+        frozenDates: [...frozenDates, yesterday],
+        freezes: (h.freezes ?? 0) - 1,
+      };
+    }));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addHabit = useCallback((habit: Omit<Habit, 'id' | 'createdAt' | 'completedDates'>) => {
     setHabits(prev => [
@@ -127,7 +163,35 @@ export function useHabits() {
               : st.completedDates.includes(d) ? st.completedDates : [...st.completedDates, d],
           }))
         : h.subtasks;
-      return { ...h, completedDates: newCompletedDates, subtasks: updatedSubtasks };
+
+      // Compute new streak using frozenDates so award logic is freeze-aware
+      const frozenDates = h.frozenDates ?? [];
+      const isProtected = (date: string) =>
+        newCompletedDates.includes(date) || frozenDates.includes(date);
+      let streak = 0;
+      const tempD = new Date();
+      if (!isProtected(format(tempD, 'yyyy-MM-dd'))) tempD.setDate(tempD.getDate() - 1);
+      while (true) {
+        const ds = format(tempD, 'yyyy-MM-dd');
+        if (isProtected(ds)) { streak++; tempD.setDate(tempD.getDate() - 1); }
+        else break;
+      }
+
+      // Award freeze tokens at milestones (only when marking complete, not undo)
+      let freezes = h.freezes ?? 0;
+      let freezeEarned = h.freezeEarned ?? 0;
+      if (!completed) {
+        if (streak >= 7 && freezeEarned < 1) {
+          freezes = Math.min(freezes + 1, 2);
+          freezeEarned = 1;
+        }
+        if (streak >= 30 && freezeEarned < 2) {
+          freezes = Math.min(freezes + 1, 2);
+          freezeEarned = 2;
+        }
+      }
+
+      return { ...h, completedDates: newCompletedDates, subtasks: updatedSubtasks, freezes, freezeEarned };
     }));
   }, []);
 
@@ -150,15 +214,20 @@ export function useHabits() {
     let streak = 0;
     const d = new Date();
     const todayStr = format(d, 'yyyy-MM-dd');
-    
-    // Check if today is completed, if not start from yesterday
-    if (!habit.completedDates.includes(todayStr)) {
+    const frozenDates = habit.frozenDates ?? [];
+
+    // A date is "protected" if completed OR frozen by a freeze token
+    const isProtected = (date: string) =>
+      habit.completedDates.includes(date) || frozenDates.includes(date);
+
+    // If today is not protected, start counting from yesterday
+    if (!isProtected(todayStr)) {
       d.setDate(d.getDate() - 1);
     }
 
     while (true) {
       const dateStr = format(d, 'yyyy-MM-dd');
-      if (habit.completedDates.includes(dateStr)) {
+      if (isProtected(dateStr)) {
         streak++;
         d.setDate(d.getDate() - 1);
       } else {
@@ -272,6 +341,7 @@ export function useHabits() {
 
   const getHabit30DayGrid = useCallback((habitId: string) => {
     const habit = habits.find(h => h.id === habitId);
+    const frozenDates = habit?.frozenDates ?? [];
     const days = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date();
@@ -280,12 +350,14 @@ export function useHabits() {
       const dayNum = d.getDay();
       const isScheduled = habit ? habit.targetDays.includes(dayNum) : false;
       const isCompleted = habit ? habit.completedDates.includes(dateStr) : false;
+      const isFrozen = frozenDates.includes(dateStr);
       days.push({
         date: dateStr,
         dayLabel: format(d, 'd'),
         dayShort: format(d, 'EEE'),
         isScheduled,
         isCompleted,
+        isFrozen,
         isFuture: d > new Date(),
       });
     }
