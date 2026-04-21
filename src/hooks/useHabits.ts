@@ -173,6 +173,11 @@ export function useHabits() {
       if (!isProtected(format(tempD, 'yyyy-MM-dd'))) tempD.setDate(tempD.getDate() - 1);
       while (true) {
         const ds = format(tempD, 'yyyy-MM-dd');
+        const dayOfWeek = tempD.getDay();
+        if (!h.targetDays.includes(dayOfWeek)) {
+          tempD.setDate(tempD.getDate() - 1);
+          continue;
+        }
         if (isProtected(ds)) { streak++; tempD.setDate(tempD.getDate() - 1); }
         else break;
       }
@@ -227,6 +232,13 @@ export function useHabits() {
 
     while (true) {
       const dateStr = format(d, 'yyyy-MM-dd');
+      const dayOfWeek = d.getDay();
+      
+      if (!habit.targetDays.includes(dayOfWeek)) {
+        d.setDate(d.getDate() - 1);
+        continue;
+      }
+
       if (isProtected(dateStr)) {
         streak++;
         d.setDate(d.getDate() - 1);

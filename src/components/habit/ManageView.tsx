@@ -1,5 +1,5 @@
 import { Habit, CATEGORY_LABELS } from '@/types/habit';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ListTodo } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -7,9 +7,10 @@ const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 interface ManageViewProps {
   habits: Habit[];
   onDelete: (id: string) => void;
+  onOpenDetail: (id: string) => void;
 }
 
-export function ManageView({ habits, onDelete }: ManageViewProps) {
+export function ManageView({ habits, onDelete, onOpenDetail }: ManageViewProps) {
   return (
     <div className="space-y-3">
       {habits.length === 0 && (
@@ -27,12 +28,23 @@ export function ManageView({ habits, onDelete }: ManageViewProps) {
           className="flex items-center gap-4 p-4 rounded-2xl bg-card habit-card-shadow"
         >
           <span className="text-2xl">{habit.icon}</span>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" onClick={habit.hasSubtasks ? () => onOpenDetail(habit.id) : undefined}>
             <p className="font-semibold text-foreground text-[15px]">{habit.name}</p>
             <p className="text-xs text-muted-foreground">
               {CATEGORY_LABELS[habit.category]} · {habit.targetDays.map(d => dayLabels[d]).join(', ')}
             </p>
           </div>
+          
+          {habit.hasSubtasks && (
+            <button
+              onClick={() => onOpenDetail(habit.id)}
+              className="p-2 rounded-xl text-primary hover:bg-primary/10 transition-colors"
+              title="View steps"
+            >
+              <ListTodo className="w-5 h-5" />
+            </button>
+          )}
+
           <button
             onClick={() => onDelete(habit.id)}
             className="p-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors"

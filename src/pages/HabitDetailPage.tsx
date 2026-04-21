@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, CheckCircle2, Circle, ChevronRight } from 'lucide-react';
 import { Habit } from '@/types/habit';
@@ -24,6 +24,8 @@ export function HabitDetailPage({
 }: HabitDetailPageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readonly = searchParams.get('readonly') === 'true';
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
   const [notes, setNotes] = useState(() => {
@@ -106,28 +108,30 @@ export function HabitDetailPage({
       <div className="max-w-md mx-auto px-5 py-6 space-y-4">
 
         {/* Main habit toggle */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border/50 shadow-sm"
-        >
-          <div>
-            <p className="font-black text-foreground text-sm">Complete All</p>
-            <p className="text-xs text-muted-foreground">
-              {isHabitDone ? 'All done today! 🎉' : 'Mark entire habit as done'}
-            </p>
-          </div>
-          <button
-            onClick={() => toggleHabit(habit.id)}
-            className="transition-transform active:scale-90"
+        {!readonly && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border/50 shadow-sm"
           >
-            {isHabitDone ? (
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
-            ) : (
-              <Circle className="w-8 h-8 text-muted-foreground/40" />
-            )}
-          </button>
-        </motion.div>
+            <div>
+              <p className="font-black text-foreground text-sm">Complete All</p>
+              <p className="text-xs text-muted-foreground">
+                {isHabitDone ? 'All done today! 🎉' : 'Mark entire habit as done'}
+              </p>
+            </div>
+            <button
+              onClick={() => toggleHabit(habit.id)}
+              className="transition-transform active:scale-90"
+            >
+              {isHabitDone ? (
+                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              ) : (
+                <Circle className="w-8 h-8 text-muted-foreground/40" />
+              )}
+            </button>
+          </motion.div>
+        )}
 
         {/* Sub-tasks section */}
         <div>
@@ -135,13 +139,15 @@ export function HabitDetailPage({
             <h2 className="text-sm font-black text-foreground uppercase tracking-widest">
               Sub-tasks
             </h2>
-            <button
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full active:scale-95 transition-transform"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Step
-            </button>
+            {!readonly && (
+              <button
+                onClick={() => setAdding(true)}
+                className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Step
+              </button>
+            )}
           </div>
 
           {/* Add input */}
@@ -209,8 +215,8 @@ export function HabitDetailPage({
                       }`}
                     >
                       <button
-                        onClick={() => toggleSubtask(habit.id, st.id)}
-                        className="shrink-0 transition-transform active:scale-75"
+                        onClick={readonly ? undefined : () => toggleSubtask(habit.id, st.id)}
+                        className={`shrink-0 transition-transform ${readonly ? 'cursor-default' : 'active:scale-75'}`}
                       >
                         {isDone ? (
                           <motion.div
@@ -228,12 +234,14 @@ export function HabitDetailPage({
                       }`}>
                         {st.name}
                       </span>
-                      <button
-                        onClick={() => deleteSubtask(habit.id, st.id)}
-                        className="shrink-0 p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!readonly && (
+                        <button
+                          onClick={() => deleteSubtask(habit.id, st.id)}
+                          className="shrink-0 p-1.5 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </motion.div>
                   );
                 })}

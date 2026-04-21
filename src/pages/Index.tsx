@@ -131,7 +131,7 @@ const Index = () => {
               transition={{ duration: 0.2 }}
             >
               <h1 className="text-2xl font-extrabold text-foreground mb-6">Manage Habits</h1>
-              <ManageView habits={habits} onDelete={deleteHabit} />
+              <ManageView habits={habits} onDelete={deleteHabit} onOpenDetail={(id) => navigate(`/habit/${id}?readonly=true`)} />
             </motion.div>
           )}
 

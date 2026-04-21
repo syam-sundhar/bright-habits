@@ -142,25 +142,6 @@ function HabitDayGrid({ habit, grid, onToggleDay }: { habit: Habit; grid: DayCel
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="px-4 pb-3 flex items-center gap-4">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-gradient-to-br from-green-400 to-emerald-500" />
-          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Done</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-gradient-to-br from-blue-400 to-sky-500" />
-          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Frozen</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-red-100" />
-          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Missed</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-muted/40" />
-          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Off day</span>
-        </div>
-      </div>
     </motion.div>
   );
 }
@@ -237,9 +218,30 @@ export function StatsView({ habits, today, getStreak, getWeekData, getMonthlySta
 
       {/* 30-Day Activity Grid per habit */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="w-1.5 h-4 rounded-full bg-gradient-to-b from-green-400 to-emerald-500 inline-block" />
-          <h3 className="font-black text-foreground text-sm uppercase tracking-widest">30-Day Activity</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-gradient-to-b from-green-400 to-emerald-500 inline-block" />
+            <h3 className="font-black text-foreground text-sm uppercase tracking-widest">30-Day Activity</h3>
+          </div>
+          {/* Global Legend */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded shadow-sm bg-gradient-to-br from-green-400 to-emerald-500" />
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Done</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded shadow-sm bg-gradient-to-br from-blue-400 to-sky-500" />
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Frozen</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded bg-red-100" />
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Missed</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded bg-muted/40" />
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wide">Off day</span>
+            </div>
+          </div>
         </div>
         <div className="space-y-3">
           {habits.map((habit, i) => (
