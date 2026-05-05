@@ -25,12 +25,19 @@ export function ManageView({ habits, onDelete, onOpenDetail }: ManageViewProps) 
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.05 }}
-          className="flex items-center gap-4 p-4 rounded-2xl bg-card habit-card-shadow"
+          className={`flex items-center gap-4 p-4 rounded-2xl bg-card habit-card-shadow ${habit.isPaused ? 'grayscale opacity-75' : ''}`}
         >
           <span className="text-2xl">{habit.icon}</span>
           <div className="flex-1 min-w-0" onClick={habit.hasSubtasks ? () => onOpenDetail(habit.id) : undefined}>
-            <p className="font-semibold text-foreground text-[15px]">{habit.name}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="font-semibold text-foreground text-[15px] flex items-center gap-2">
+              <span className="truncate">{habit.name}</span>
+              {habit.isPaused && (
+                <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full whitespace-nowrap">
+                  Paused
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
               {CATEGORY_LABELS[habit.category]} · {habit.targetDays.map(d => dayLabels[d]).join(', ')}
             </p>
           </div>

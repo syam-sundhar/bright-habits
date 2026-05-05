@@ -8,6 +8,8 @@ export interface Subtask {
   completedDates: string[]; // ISO date strings per day
 }
 
+export type AppMode = 'home' | 'college';
+
 export interface Habit {
   id: string;
   name: string;
@@ -24,6 +26,7 @@ export interface Habit {
   freezeEarned?: number; // highest milestone earned (0 = none, 1 = 7-day, 2 = 30-day)
   frozenDates?: string[]; // dates protected by a freeze (shown in blue)
   reminderTime?: string; // Daily reminder time for push notification (e.g., "09:00")
+  isPaused?: boolean; // If true, habit acts as an off day
 }
 
 export const CATEGORY_LABELS: Record<HabitCategory, string> = {

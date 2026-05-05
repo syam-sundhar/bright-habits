@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, Flame, MoreVertical, Trash2, Pencil, ChevronRight, ListTodo } from 'lucide-react';
+import { Check, Flame, MoreVertical, Trash2, Pencil, ChevronRight, ListTodo, PauseCircle, PlayCircle } from 'lucide-react';
 import { Habit } from '@/types/habit';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -11,6 +11,7 @@ interface HabitCardProps {
   onDelete?: () => void;
   onEdit?: () => void;
   onOpenDetail?: () => void;
+  onTogglePause?: () => void;
 }
 
 const colorClasses: Record<string, { bg: string; check: string; ring: string }> = {
@@ -21,7 +22,7 @@ const colorClasses: Record<string, { bg: string; check: string; ring: string }> 
   purple: { bg: 'bg-habit-purple/10', check: 'bg-habit-purple', ring: 'ring-habit-purple/30' },
 };
 
-export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEdit, onOpenDetail }: HabitCardProps) {
+export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEdit, onOpenDetail, onTogglePause }: HabitCardProps) {
   const colors = colorClasses[habit.color] || colorClasses.blue;
   const hasSubtasks = habit.hasSubtasks && (habit.subtasks?.length ?? 0) > 0;
   const today = new Date().toISOString().slice(0, 10);
@@ -35,17 +36,19 @@ export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEd
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className={`rounded-xl bg-card habit-card-shadow transition-all duration-300 ${
-        isCompleted ? 'grayscale opacity-60' : ''
+        isCompleted || habit.isPaused ? 'grayscale opacity-60' : ''
       }`}
     >
       <div className="flex items-center gap-4 p-4">
         {/* Check button */}
         <motion.button
-          whileTap={{ scale: 0.85 }}
-          onClick={onToggle}
+          whileTap={habit.isPaused ? undefined : { scale: 0.85 }}
+          onClick={habit.isPaused ? undefined : onToggle}
           className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all ring-2 ${
             isCompleted
               ? 'bg-foreground/15 text-foreground ring-transparent'
+              : habit.isPaused
+              ? 'bg-muted text-muted-foreground ring-transparent cursor-not-allowed'
               : `${colors.bg} ${colors.ring}`
           }`}
         >
@@ -53,6 +56,8 @@ export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEd
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="animate-check-bounce">
               <Check className="w-6 h-6" />
             </motion.div>
+          ) : habit.isPaused ? (
+            <PauseCircle className="w-6 h-6 opacity-50" />
           ) : (
             <span className="text-xl">{habit.icon}</span>
           )}
@@ -109,6 +114,15 @@ export function HabitCard({ habit, isCompleted, streak, onToggle, onDelete, onEd
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[150px]">
+            {onTogglePause && (
+              <>
+                <DropdownMenuItem onClick={onTogglePause} className="font-medium">
+                  {habit.isPaused ? <PlayCircle className="w-4 h-4 mr-2 text-primary" /> : <PauseCircle className="w-4 h-4 mr-2 text-orange-500" />}
+                  {habit.isPaused ? 'Resume Habit' : 'Pause Habit'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             {habit.hasSubtasks && (
               <>
                 <DropdownMenuItem onClick={onOpenDetail} className="font-medium">

@@ -88,7 +88,13 @@ function HabitDayGrid({ habit, grid, onToggleDay }: { habit: Habit; grid: DayCel
       >
         <div className="flex gap-1.5 min-w-max">
           {grid.map((cell, i) => {
-            const isToday = cell.date === new Date().toISOString().slice(0, 10);
+            const todayDate = new Date();
+            const isToday = cell.date === todayDate.toISOString().slice(0, 10);
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const isYesterday = cell.date === yesterdayDate.toISOString().slice(0, 10);
+            const isClickable = !cell.isFuture && (isToday || isYesterday);
+
             return (
               <div
                 key={cell.date}
@@ -98,18 +104,18 @@ function HabitDayGrid({ habit, grid, onToggleDay }: { habit: Habit; grid: DayCel
                 {/* Day box */}
                 <motion.button
                   onClick={() => {
-                    // Only allow toggling if it was scheduled or completed/frozen (could be past or today)
-                    if (!cell.isFuture) {
+                    // Only allow toggling for today or yesterday
+                    if (isClickable) {
                       onToggleDay(habit.id, cell.date);
                     }
                   }}
-                  whileTap={!cell.isFuture ? { scale: 0.85 } : undefined}
+                  whileTap={isClickable ? { scale: 0.85 } : undefined}
                   initial={{ opacity: 0, scale: 0.7 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.012, duration: 0.25 }}
                   className={`w-7 h-7 rounded-lg flex items-center justify-center relative transition-all
                     ${isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-                    ${cell.isFuture ? 'opacity-30 cursor-default' : 'cursor-pointer hover:ring-2 hover:ring-primary/50'}
+                    ${cell.isFuture ? 'opacity-30 cursor-default' : isClickable ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-default'}
                     ${cell.isCompleted
                       ? 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-sm shadow-green-200'
                       : cell.isFrozen

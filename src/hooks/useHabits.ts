@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Habit } from '@/types/habit';
+import { Habit, AppMode } from '@/types/habit';
 import { format, startOfMonth, subDays, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 const STORAGE_KEY = 'habit-tracker-habits';
+
+const STORAGE_KEY_V2 = 'habit-tracker-data-v2';
 
 const defaultHabits: Habit[] = [
   {
@@ -52,14 +54,39 @@ const defaultHabits: Habit[] = [
 ];
 
 export function useHabits() {
-  const [habits, setHabits] = useState<Habit[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : defaultHabits;
+  const [appMode, setAppMode] = useState<AppMode>(() => {
+    return (localStorage.getItem('app-mode') as AppMode) || 'college';
+  });
+
+  const [habitsData, setHabitsData] = useState<Record<AppMode, Habit[]>>(() => {
+    const storedV2 = localStorage.getItem(STORAGE_KEY_V2);
+    if (storedV2) return JSON.parse(storedV2);
+
+    const oldStored = localStorage.getItem(STORAGE_KEY);
+    if (oldStored) {
+      return { home: [], college: JSON.parse(oldStored) };
+    }
+    return { home: [], college: defaultHabits };
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
-  }, [habits]);
+    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(habitsData));
+  }, [habitsData]);
+
+  useEffect(() => {
+    localStorage.setItem('app-mode', appMode);
+  }, [appMode]);
+
+  const habits = habitsData[appMode] || [];
+
+  const updateCurrentModeHabits = useCallback((updater: (prev: Habit[]) => Habit[]) => {
+    setHabitsData(prev => ({
+      ...prev,
+      [appMode]: updater(prev[appMode] || []),
+    }));
+  }, [appMode]);
+
+
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -75,34 +102,44 @@ export function useHabits() {
     const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
     const dayBeforeYesterday = format(subDays(new Date(), 2), 'yyyy-MM-dd');
 
-    setHabits(prev => prev.map(h => {
-      if ((h.freezes ?? 0) <= 0) return h;
+    setHabitsData(prevData => {
+      const newData = { ...prevData };
+      let changed = false;
 
-      const frozenDates = h.frozenDates ?? [];
-      const yesterdayDay = parseISO(yesterday).getDay();
+      for (const mode of Object.keys(newData) as AppMode[]) {
+        const modeHabits = newData[mode].map(h => {
+          if ((h.freezes ?? 0) <= 0) return h;
 
-      // Yesterday must be a scheduled day
-      if (!h.targetDays.includes(yesterdayDay)) return h;
-      // Yesterday must not already be done or frozen
-      if (h.completedDates.includes(yesterday) || frozenDates.includes(yesterday)) return h;
+          const frozenDates = h.frozenDates ?? [];
+          const yesterdayDay = parseISO(yesterday).getDay();
 
-      // The day before yesterday must have been completed or frozen (streak existed)
-      const hadStreak =
-        h.completedDates.includes(dayBeforeYesterday) ||
-        frozenDates.includes(dayBeforeYesterday);
-      if (!hadStreak) return h;
+          // Yesterday must be a scheduled day and not paused
+          if (!h.targetDays.includes(yesterdayDay) || h.isPaused) return h;
+          // Yesterday must not already be done or frozen
+          if (h.completedDates.includes(yesterday) || frozenDates.includes(yesterday)) return h;
 
-      // Apply freeze: mark yesterday as frozen, consume one token
-      return {
-        ...h,
-        frozenDates: [...frozenDates, yesterday],
-        freezes: (h.freezes ?? 0) - 1,
-      };
-    }));
+          // The day before yesterday must have been completed or frozen (streak existed)
+          const hadStreak =
+            h.completedDates.includes(dayBeforeYesterday) ||
+            frozenDates.includes(dayBeforeYesterday);
+          if (!hadStreak) return h;
+
+          changed = true;
+          // Apply freeze: mark yesterday as frozen, consume one token
+          return {
+            ...h,
+            frozenDates: [...frozenDates, yesterday],
+            freezes: (h.freezes ?? 0) - 1,
+          };
+        });
+        newData[mode] = modeHabits;
+      }
+      return changed ? newData : prevData;
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addHabit = useCallback((habit: Omit<Habit, 'id' | 'createdAt' | 'completedDates'>) => {
-    setHabits(prev => [
+    updateCurrentModeHabits(prev => [
       ...prev,
       {
         ...habit,
@@ -111,20 +148,24 @@ export function useHabits() {
         completedDates: [],
       },
     ]);
-  }, []);
+  }, [updateCurrentModeHabits]);
 
   const deleteHabit = useCallback((id: string) => {
-    setHabits(prev => prev.filter(h => h.id !== id));
-  }, []);
+    updateCurrentModeHabits(prev => prev.filter(h => h.id !== id));
+  }, [updateCurrentModeHabits]);
 
   const editHabit = useCallback((id: string, updates: Partial<Habit>) => {
-    setHabits(prev => prev.map(h => (h.id === id ? { ...h, ...updates } : h)));
-  }, []);
+    updateCurrentModeHabits(prev => prev.map(h => (h.id === id ? { ...h, ...updates } : h)));
+  }, [updateCurrentModeHabits]);
+
+  const togglePauseHabit = useCallback((id: string) => {
+    updateCurrentModeHabits(prev => prev.map(h => (h.id === id ? { ...h, isPaused: !h.isPaused } : h)));
+  }, [updateCurrentModeHabits]);
 
   // Toggle a single subtask checkbox for a given date
   const toggleSubtask = useCallback((habitId: string, subtaskId: string, date?: string) => {
     const d = date || format(new Date(), 'yyyy-MM-dd');
-    setHabits(prev => prev.map(h => {
+    updateCurrentModeHabits(prev => prev.map(h => {
       if (h.id !== habitId) return h;
       const updatedSubtasks = (h.subtasks || []).map(st => {
         if (st.id !== subtaskId) return st;
@@ -143,12 +184,12 @@ export function useHabits() {
         : h.completedDates.filter(dd => dd !== d);
       return { ...h, subtasks: updatedSubtasks, completedDates: parentDone };
     }));
-  }, []);
+  }, [updateCurrentModeHabits]);
 
   // Toggle main habit — if hasSubtasks, also check/uncheck ALL subtasks
   const toggleHabit = useCallback((habitId: string, date?: string) => {
     const d = date || format(new Date(), 'yyyy-MM-dd');
-    setHabits(prev => prev.map(h => {
+    updateCurrentModeHabits(prev => prev.map(h => {
       if (h.id !== habitId) return h;
       const completed = h.completedDates.includes(d);
       const newCompletedDates = completed
@@ -198,22 +239,22 @@ export function useHabits() {
 
       return { ...h, completedDates: newCompletedDates, subtasks: updatedSubtasks, freezes, freezeEarned };
     }));
-  }, []);
+  }, [updateCurrentModeHabits]);
 
   const addSubtask = useCallback((habitId: string, name: string) => {
-    setHabits(prev => prev.map(h => {
+    updateCurrentModeHabits(prev => prev.map(h => {
       if (h.id !== habitId) return h;
       const newSubtask = { id: Date.now().toString(), name, completedDates: [] };
       return { ...h, subtasks: [...(h.subtasks || []), newSubtask] };
     }));
-  }, []);
+  }, [updateCurrentModeHabits]);
 
   const deleteSubtask = useCallback((habitId: string, subtaskId: string) => {
-    setHabits(prev => prev.map(h => {
+    updateCurrentModeHabits(prev => prev.map(h => {
       if (h.id !== habitId) return h;
       return { ...h, subtasks: (h.subtasks || []).filter(s => s.id !== subtaskId) };
     }));
-  }, []);
+  }, [updateCurrentModeHabits]);
 
   const getStreak = useCallback((habit: Habit): number => {
     let streak = 0;
@@ -251,7 +292,7 @@ export function useHabits() {
 
   const getTodayProgress = useCallback(() => {
     const todayDay = new Date().getDay();
-    const todayHabits = habits.filter(h => h.targetDays.includes(todayDay));
+    const todayHabits = habits.filter(h => h.targetDays.includes(todayDay) && !h.isPaused);
     const completed = todayHabits.filter(h => h.completedDates.includes(today));
     return { total: todayHabits.length, completed: completed.length };
   }, [habits, today]);
@@ -263,7 +304,7 @@ export function useHabits() {
       d.setDate(d.getDate() - i);
       const dateStr = format(d, 'yyyy-MM-dd');
       const dayNum = d.getDay();
-      const dayHabits = habits.filter(h => h.targetDays.includes(dayNum));
+      const dayHabits = habits.filter(h => h.targetDays.includes(dayNum) && !h.isPaused);
       const completed = dayHabits.filter(h => h.completedDates.includes(dateStr)).length;
       days.push({
         date: dateStr,
@@ -293,7 +334,7 @@ export function useHabits() {
     while (d <= endDate) {
       const dateStr = format(d, 'yyyy-MM-dd');
       const dayNum = d.getDay();
-      const dayHabits = habits.filter(h => h.targetDays.includes(dayNum));
+      const dayHabits = habits.filter(h => h.targetDays.includes(dayNum) && !h.isPaused);
       
       if (dayHabits.length > 0) {
         const completed = dayHabits.filter(h => h.completedDates.includes(dateStr)).length;
@@ -339,7 +380,7 @@ export function useHabits() {
     let possible = 0;
     const d = new Date(startDate);
     while (d <= endDate) {
-      if (habit.targetDays.includes(d.getDay())) possible++;
+      if (habit.targetDays.includes(d.getDay()) && !habit.isPaused) possible++;
       d.setDate(d.getDate() + 1);
     }
 
@@ -360,7 +401,7 @@ export function useHabits() {
       d.setDate(d.getDate() - i);
       const dateStr = format(d, 'yyyy-MM-dd');
       const dayNum = d.getDay();
-      const isScheduled = habit ? habit.targetDays.includes(dayNum) : false;
+      const isScheduled = habit ? (habit.targetDays.includes(dayNum) && !habit.isPaused) : false;
       const isCompleted = habit ? habit.completedDates.includes(dateStr) : false;
       const isFrozen = frozenDates.includes(dateStr);
       days.push({
@@ -377,12 +418,15 @@ export function useHabits() {
   }, [habits]);
 
   return {
+    appMode,
+    setAppMode,
     habits,
     today,
     toggleHabit,
     addHabit,
     deleteHabit,
     editHabit,
+    togglePauseHabit,
     toggleSubtask,
     addSubtask,
     deleteSubtask,

@@ -23,6 +23,8 @@ const Index = () => {
   useNotifications();
 
   const {
+    appMode,
+    setAppMode,
     habits,
     today,
     toggleHabit,
@@ -60,9 +62,25 @@ const Index = () => {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="mb-6">
-                <p className="text-sm font-medium text-muted-foreground">{format(new Date(), 'EEEE, MMM d')}</p>
-                <h1 className="text-2xl font-extrabold text-foreground mt-1">{greeting()}</h1>
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{format(new Date(), 'EEEE, MMM d')}</p>
+                  <h1 className="text-2xl font-extrabold text-foreground mt-1">{greeting()}</h1>
+                </div>
+                <div className="bg-secondary rounded-full p-1 flex items-center gap-1 shadow-inner border border-border/50">
+                  <button
+                    onClick={() => setAppMode('home')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all ${appMode === 'home' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    Home
+                  </button>
+                  <button
+                    onClick={() => setAppMode('college')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all ${appMode === 'college' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    College
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center gap-6 p-5 rounded-2xl bg-card habit-card-shadow mb-6">
@@ -94,6 +112,7 @@ const Index = () => {
                     onDelete={() => deleteHabit(habit.id)}
                     onEdit={() => setEditingHabit(habit)}
                     onOpenDetail={() => navigate(`/habit/${habit.id}`)}
+                    onTogglePause={() => togglePauseHabit(habit.id)}
                   />
                 ))}
               </div>

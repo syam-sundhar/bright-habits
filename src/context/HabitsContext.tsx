@@ -1,13 +1,16 @@
 import { createContext, useContext } from 'react';
-import { Habit } from '@/types/habit';
+import { Habit, AppMode } from '@/types/habit';
 
 interface HabitsContextType {
+  appMode: AppMode;
+  setAppMode: (mode: AppMode) => void;
   habits: Habit[];
   today: string;
   toggleHabit: (id: string, date?: string) => void;
   addHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'completedDates'>) => void;
   deleteHabit: (id: string) => void;
   editHabit: (id: string, updates: Partial<Habit>) => void;
+  togglePauseHabit: (id: string) => void;
   toggleSubtask: (habitId: string, subtaskId: string, date?: string) => void;
   addSubtask: (habitId: string, name: string) => void;
   deleteSubtask: (habitId: string, subtaskId: string) => void;
